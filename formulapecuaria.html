@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FormulaPecuária — Formulação de Rações</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:15px;color:#1a1a1a;background:#f5f5f0;min-height:100vh}
+.app{max-width:680px;margin:0 auto;padding:1rem}
+.screen{display:none}
+.screen.active{display:block}
+.card{background:#fff;border:1px solid #e5e5e0;border-radius:12px;padding:1.25rem;margin-bottom:8px}
+.header{text-align:center;padding:1.5rem 0 1rem}
+.header h1{font-size:22px;font-weight:600;color:#1a1a1a}
+.header p{font-size:14px;color:#666;margin-top:4px}
+.section-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.animal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.5rem}
+.animal-btn{border:1px solid #e5e5e0;border-radius:10px;padding:14px 8px;cursor:pointer;text-align:center;background:#fff;transition:all .15s;color:#1a1a1a}
+.animal-btn:hover{border-color:#aaa;background:#fafaf8}
+.animal-btn.selected{border:2px solid #1D9E75;background:#E1F5EE;color:#085041}
+.animal-btn .icon{font-size:26px;margin-bottom:4px}
+.animal-btn .name{font-size:12px;font-weight:600}
+.apt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1.5rem}
+.apt-btn{border:1px solid #e5e5e0;border-radius:10px;padding:12px;cursor:pointer;background:#fff;text-align:left;color:#1a1a1a;transition:all .15s}
+.apt-btn:hover{border-color:#aaa;background:#fafaf8}
+.apt-btn.selected{border:2px solid #1D9E75;background:#E1F5EE;color:#085041}
+.apt-btn .apt-name{font-size:14px;font-weight:600}
+.apt-btn .apt-desc{font-size:12px;color:#888;margin-top:2px}
+.apt-btn.selected .apt-desc{color:#0F6E56}
+.field-group{margin-bottom:1.25rem}
+.field-group label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+.field-group input,.field-group select{width:100%;border:1px solid #e5e5e0;border-radius:8px;padding:10px 12px;font-size:15px;background:#fff;color:#1a1a1a}
+.field-group .hint{font-size:12px;color:#888;margin-top:4px}
+.btn-primary{width:100%;background:#1D9E75;color:#fff;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px;transition:all .15s}
+.btn-primary:hover{background:#0F6E56}
+.btn-primary:disabled{background:#ddd;color:#aaa;cursor:not-allowed}
+.btn-secondary{width:100%;background:#fff;color:#1a1a1a;border:1px solid #e5e5e0;border-radius:10px;padding:12px;font-size:15px;cursor:pointer;margin-top:8px;transition:all .15s}
+.btn-secondary:hover{background:#fafaf8}
+.step-bar{display:flex;align-items:center;gap:6px;margin-bottom:1.5rem}
+.step{flex:1;height:4px;border-radius:2px;background:#eee}
+.step.done{background:#1D9E75}
+.step.active{background:#5DCAA5}
+.result-header{background:#E1F5EE;border-radius:10px;padding:1rem;margin-bottom:1rem;border:1px solid #9FE1CB}
+.result-header h2{font-size:18px;font-weight:600;color:#085041}
+.result-header p{font-size:13px;color:#0F6E56;margin-top:2px}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem}
+.metric{background:#f5f5f0;border-radius:10px;padding:.75rem 1rem}
+.metric .m-label{font-size:12px;color:#888;margin-bottom:2px}
+.metric .m-val{font-size:22px;font-weight:600;color:#1a1a1a}
+.metric .m-unit{font-size:12px;color:#888}
+.ing-table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:1rem}
+.ing-table th{font-size:12px;font-weight:600;color:#888;text-align:left;padding:6px 8px;border-bottom:1px solid #eee}
+.ing-table td{padding:8px 8px;border-bottom:1px solid #f0f0f0;color:#1a1a1a}
+.ing-table tr:last-child td{border-bottom:none}
+.nut-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.nut-label{font-size:13px;color:#1a1a1a;width:100px;flex-shrink:0}
+.nut-bar-wrap{flex:1;margin:0 10px;height:8px;background:#eee;border-radius:4px;overflow:hidden}
+.nut-bar{height:100%;border-radius:4px;transition:width .4s}
+.nut-val{font-size:12px;color:#888;width:100px;text-align:right;flex-shrink:0}
+.alert{padding:10px 12px;border-radius:8px;margin-bottom:8px;font-size:13px;line-height:1.5}
+.alert.warn{background:#FAEEDA;color:#633806;border:1px solid #FAC775}
+.alert.ok{background:#EAF3DE;color:#173404;border:1px solid #C0DD97}
+.alert.info{background:#E6F1FB;color:#042C53;border:1px solid #B5D4F4}
+.tab-bar{display:flex;gap:4px;margin-bottom:1rem;overflow-x:auto}
+.tab{padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;color:#888;background:transparent;border:none;white-space:nowrap;font-weight:500}
+.tab.active{background:#E1F5EE;color:#0F6E56;font-weight:600}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.ing-edit-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ing-edit-row label{font-size:13px;flex:1;color:#1a1a1a}
+.ing-edit-row input{width:90px;border:1px solid #e5e5e0;border-radius:8px;padding:6px 8px;font-size:13px;text-align:right}
+.saved-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.saved-item:last-child{border-bottom:none}
+.saved-item .s-name{font-size:14px;font-weight:600}
+.saved-item .s-sub{font-size:12px;color:#888}
+.saved-item .s-btn{font-size:13px;color:#1D9E75;cursor:pointer;border:none;background:none;padding:4px 8px;font-weight:600}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.badge.green{background:#EAF3DE;color:#3B6D11}
+.badge.amber{background:#FAEEDA;color:#854F0B}
+.badge.red{background:#FCEBEB;color:#A32D2D}
+.loading-screen{text-align:center;padding:3rem 1rem}
+.spinner{display:inline-block;width:36px;height:36px;border:3px solid #eee;border-top-color:#1D9E75;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ing-pct-bar{display:inline-block;width:40px;height:6px;border-radius:3px;background:#eee;vertical-align:middle;margin-right:4px;overflow:hidden}
+.ing-pct-fill{height:100%;background:#1D9E75;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TELA 1: SELEÇÃO -->
+<div id="screen-start" class="screen active">
+  <div class="header">
+    <div style="font-size:40px;margin-bottom:8px">🌾</div>
+    <h1>FormulaPecuária</h1>
+    <p>Formulação de rações técnica para o campo brasileiro</p>
+  </div>
+  <div class="card">
+    <div class="step-bar"><div class="step active"></div><div class="step"></div><div class="step"></div><div class="step"></div></div>
+    <div class="section-label">Passo 1 — escolha o animal</div>
+    <div class="animal-grid" id="animalGrid"></div>
+    <div id="aptSection" style="display:none">
+      <div class="section-label">Passo 2 — qual o objetivo?</div>
+      <div class="apt-grid" id="aptGrid"></div>
+    </div>
+    <button class="btn-primary" id="btnStep1" disabled onclick="goStep2()">Próximo →</button>
+  </div>
+  <div>
+    <button class="btn-secondary" onclick="goSaved()">📋 Ver formulações salvas</button>
+  </div>
+</div>
+
+<!-- TELA 2: DADOS -->
+<div id="screen-step2" class="screen">
+  <div class="header">
+    <h1>Dados do animal</h1>
+    <p id="s2sub"></p>
+  </div>
+  <div class="card">
+    <div class="step-bar"><div class="step done"></div><div class="step active"></div><div class="step"></div><div class="step"></div></div>
+    <div class="field-group">
+      <label>Peso vivo (kg)</label>
+      <input type="number" id="pesoInput" placeholder="ex: 400" min="1" max="2000" oninput="updateStep2()">
+      <div class="hint" id="pesoHint">Informe o peso médio do animal</div>
+    </div>
+    <div class="field-group" id="ganhoField">
+      <label id="metaLabel">Ganho de peso esperado (kg/dia)</label>
+      <input type="number" id="metaInput" placeholder="ex: 1.0" step="0.1" min="0" max="5" oninput="updateStep2()">
+      <div class="hint" id="metaHint">Ex: 1.0 para 1kg por dia</div>
+    </div>
+    <div class="section-label" style="margin-top:1.25rem">Preços dos ingredientes (R$/kg)</div>
+    <div id="costFields" style="display:none"></div>
+    <button class="btn-secondary" id="btnToggleCosts" onclick="toggleCosts()" style="margin-top:0;margin-bottom:4px">+ Ajustar preços dos ingredientes</button>
+    <button class="btn-primary" id="btnFormular" disabled onclick="formular()">⚡ Gerar formulação</button>
+    <button class="btn-secondary" onclick="goScreen('screen-start')">← Voltar</button>
+  </div>
+</div>
+
+<!-- TELA LOADING -->
+<div id="screen-loading" class="screen">
+  <div class="loading-screen">
+    <div class="spinner"></div>
+    <div style="font-size:16px;font-weight:600;margin-bottom:6px">Calculando formulação...</div>
+    <div style="font-size:14px;color:#888" id="loadingMsg">Verificando exigências nutricionais</div>
+  </div>
+</div>
+
+<!-- TELA RESULTADO -->
+<div id="screen-result" class="screen">
+  <div id="resultHeader" class="result-header"></div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('tab-formula')">📦 Fórmula</button>
+    <button class="tab" onclick="showTab('tab-nutri')">📊 Nutrição</button>
+    <button class="tab" onclick="showTab('tab-alertas')">⚠️ Alertas</button>
+    <button class="tab" onclick="showTab('tab-exp')">💬 Explicação</button>
+  </div>
+  <div id="tab-formula" class="tab-content active card">
+    <div class="metrics" id="metricsBox"></div>
+    <div class="section-label">Ingredientes da ração</div>
+    <table class="ing-table" id="ingTable"></table>
+  </div>
+  <div id="tab-nutri" class="tab-content card">
+    <div class="section-label" style="margin-bottom:1.25rem">Atendimento das exigências nutricionais</div>
+    <div id="nutriBars"></div>
+  </div>
+  <div id="tab-alertas" class="tab-content card">
+    <div id="alertasBox"></div>
+  </div>
+  <div id="tab-exp" class="tab-content card">
+    <div id="expBox" style="font-size:14px;line-height:1.9;color:#333"></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn-primary" onclick="salvarFormulacao()" style="flex:1" id="btnSalvar">💾 Salvar formulação</button>
+    <button class="btn-secondary" onclick="goScreen('screen-start')" style="flex:1">Nova formulação</button>
+  </div>
+</div>
+
+<!-- TELA SALVAS -->
+<div id="screen-saved" class="screen">
+  <div class="header"><h1>📋 Formulações salvas</h1><p>Suas dietas armazenadas no dispositivo</p></div>
+  <div class="card">
+    <div id="savedList"></div>
+    <button class="btn-secondary" onclick="goScreen('screen-start')">← Voltar</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+const ANIMAIS=[
+  {id:'bovCorte',name:'Bovino de corte',icon:'🐂',apts:[
+    {id:'ganho',name:'Ganho de peso',desc:'Confinamento / recria'},
+    {id:'manutencao',name:'Manutenção',desc:'Pasto / entressafra'},
+    {id:'terminacao',name:'Terminação',desc:'Acabamento final'},
+    {id:'cria',name:'Cria / bezerro',desc:'Animais jovens'},
+  ]},
+  {id:'bovLeite',name:'Bovino de leite',icon:'🐄',apts:[
+    {id:'alta',name:'Alta produção',desc:'Acima de 20L/dia'},
+    {id:'media',name:'Média produção',desc:'10 a 20L/dia'},
+    {id:'baixa',name:'Baixa produção',desc:'Até 10L/dia'},
+    {id:'secas',name:'Vacas secas',desc:'Gestação / descanso'},
+  ]},
+  {id:'ovinos',name:'Ovinos',icon:'🐑',apts:[
+    {id:'ganho',name:'Ganho de peso',desc:'Engorda / cordeiro'},
+    {id:'manutencao',name:'Manutenção',desc:'Rebanho base'},
+    {id:'gestacao',name:'Gestação',desc:'Ovelhas prenhes'},
+    {id:'lactacao',name:'Lactação',desc:'Ovelhas com cria'},
+  ]},
+  {id:'caprinos',name:'Caprinos',icon:'🐐',apts:[
+    {id:'leite',name:'Produção de leite',desc:'Cabras em lactação'},
+    {id:'corte',name:'Corte / crescimento',desc:'Cabritos em recria'},
+    {id:'manutencao',name:'Manutenção',desc:'Rebanho base'},
+  ]},
+  {id:'suinos',name:'Suínos',icon:'🐷',apts:[
+    {id:'leitao',name:'Leitão',desc:'15 a 30 kg'},
+    {id:'crescimento',name:'Crescimento',desc:'30 a 70 kg'},
+    {id:'terminacao',name:'Terminação',desc:'70 a 110 kg'},
+    {id:'gestacao',name:'Gestação',desc:'Porcas gestantes'},
+  ]},
+  {id:'aves',name:'Aves',icon:'🐔',apts:[
+    {id:'inicial',name:'Inicial (frango)',desc:'1 a 21 dias'},
+    {id:'crescimento',name:'Crescimento',desc:'22 a 35 dias'},
+    {id:'abate',name:'Abate / final',desc:'36+ dias'},
+    {id:'postura',name:'Postura',desc:'Galinhas poedeiras'},
+  ]},
+];
+
+const ING_BASE=[
+  {id:'milho',name:'Milho grão moído',pb:8.5,ndt:88,ca:0.03,p:0.28,fdn:12,preco:1.45},
+  {id:'farSoja',name:'Farelo de soja',pb:46.0,ndt:82,ca:0.35,p:0.65,fdn:14,preco:3.20},
+  {id:'farAlgodao',name:'Farelo de algodão',pb:38.0,ndt:68,ca:0.22,p:1.05,fdn:28,preco:1.80},
+  {id:'silagem',name:'Silagem de milho',pb:7.5,ndt:65,ca:0.28,p:0.20,fdn:50,preco:0.28},
+  {id:'capimelefante',name:'Capim elefante',pb:7.0,ndt:55,ca:0.35,p:0.22,fdn:72,preco:0.12},
+  {id:'nucleo',name:'Núcleo mineral',pb:0,ndt:0,ca:18.0,p:8.5,fdn:0,preco:4.50},
+  {id:'ureia',name:'Ureia pecuária (NNP)',pb:281,ndt:0,ca:0,p:0,fdn:0,preco:2.80},
+  {id:'farTrigo',name:'Farelo de trigo',pb:16.0,ndt:72,ca:0.12,p:0.95,fdn:38,preco:1.60},
+  {id:'polpa',name:'Polpa cítrica',pb:6.5,ndt:74,ca:1.85,p:0.12,fdn:24,preco:1.20},
+  {id:'melaço',name:'Melaço de cana',pb:3.5,ndt:72,ca:0.85,p:0.08,fdn:0,preco:0.95},
+];
+
+const ING_ANIMAIS={
+  bovCorte:['milho','farSoja','farAlgodao','silagem','capimelefante','nucleo','ureia','polpa','melaço'],
+  bovLeite:['milho','farSoja','farAlgodao','silagem','capimelefante','nucleo','ureia','polpa','melaço','farTrigo'],
+  ovinos:['milho','farSoja','farAlgodao','capimelefante','silagem','nucleo','ureia','polpa'],
+  caprinos:['milho','farSoja','farAlgodao','capimelefante','silagem','nucleo','polpa'],
+  suinos:['milho','farSoja','farTrigo','melaço','nucleo'],
+  aves:['milho','farSoja','nucleo'],
+};
+
+const EXIGENCIAS={
+  bovCorte:{
+    ganho:(pv,gpd)=>({pv,cmsKg:Math.max(5,pv*0.022+gpd*0.8),pb:(pv*0.055+gpd*180)/10,ndt:pv*0.022>0?(pv*0.032+gpd*3.2)*1000/(pv*0.022)/10:65,ca:pv*0.022*0.60,p:pv*0.022*0.28,fdn_min:25,fdn_max:50,ureia_max:1.5,label:`Bovino de corte — ganho ${gpd}kg/dia`}),
+    manutencao:(pv)=>({pv,cmsKg:pv*0.018,pb:pv*0.018*0.09*1000/pv/0.018,ndt:60,ca:pv*0.018*0.38,p:pv*0.018*0.19,fdn_min:30,fdn_max:70,ureia_max:1.0,label:'Bovino de corte — manutenção'}),
+    terminacao:(pv,gpd)=>({pv,cmsKg:pv*0.025,pb:13,ndt:72,ca:pv*0.025*0.55,p:pv*0.025*0.30,fdn_min:20,fdn_max:35,ureia_max:1.5,label:'Bovino de corte — terminação'}),
+    cria:(pv,gpd)=>({pv,cmsKg:Math.max(1.5,pv*0.030),pb:18,ndt:72,ca:pv*0.030*0.70,p:pv*0.030*0.38,fdn_min:20,fdn_max:45,ureia_max:0.5,label:'Bezerro/cria'}),
+  },
+  bovLeite:{
+    alta:(pv,lit)=>({pv,cmsKg:pv*0.034,pb:17+(lit*105/(pv*0.034*10)),ndt:72,ca:pv*0.034*0.72+lit*4.5,p:pv*0.034*0.36+lit*3.0,fdn_min:28,fdn_max:50,ureia_max:1.0,label:`Vaca leiteira — alta produção (${lit}L/dia)`}),
+    media:(pv,lit)=>({pv,cmsKg:pv*0.030,pb:15.5+(lit*100/(pv*0.030*10)),ndt:68,ca:pv*0.030*0.65+lit*4.0,p:pv*0.030*0.32+lit*2.5,fdn_min:28,fdn_max:55,ureia_max:1.0,label:`Vaca leiteira — média produção (${lit}L/dia)`}),
+    baixa:(pv,lit)=>({pv,cmsKg:pv*0.026,pb:14,ndt:62,ca:pv*0.026*0.60+lit*3.5,p:pv*0.026*0.28+lit*2.0,fdn_min:30,fdn_max:60,ureia_max:0.8,label:`Vaca leiteira — baixa produção (${lit}L/dia)`}),
+    secas:(pv)=>({pv,cmsKg:pv*0.018,pb:12,ndt:55,ca:pv*0.018*0.52,p:pv*0.018*0.24,fdn_min:35,fdn_max:65,ureia_max:0.8,label:'Vaca seca — gestação'}),
+  },
+  ovinos:{
+    ganho:(pv,gpd)=>({pv,cmsKg:Math.max(0.6,pv*0.040),pb:17,ndt:68,ca:pv*0.040*0.50,p:pv*0.040*0.28,fdn_min:25,fdn_max:55,ureia_max:0.5,label:`Ovino — ganho de peso (${gpd}kg/dia)`}),
+    manutencao:(pv)=>({pv,cmsKg:pv*0.025,pb:10,ndt:55,ca:pv*0.025*0.38,p:pv*0.025*0.20,fdn_min:35,fdn_max:70,ureia_max:0.3,label:'Ovino — manutenção'}),
+    gestacao:(pv)=>({pv,cmsKg:pv*0.030,pb:14,ndt:62,ca:pv*0.030*0.55,p:pv*0.030*0.30,fdn_min:28,fdn_max:60,ureia_max:0.3,label:'Ovelha — gestação'}),
+    lactacao:(pv)=>({pv,cmsKg:pv*0.038,pb:17,ndt:68,ca:pv*0.038*0.65,p:pv*0.038*0.35,fdn_min:25,fdn_max:55,ureia_max:0.3,label:'Ovelha — lactação'}),
+  },
+  caprinos:{
+    leite:(pv,lit)=>({pv,cmsKg:pv*0.042,pb:16,ndt:68,ca:pv*0.042*0.62+lit*2.5,p:pv*0.042*0.30+lit*1.5,fdn_min:28,fdn_max:55,ureia_max:0.4,label:`Cabra — produção de leite (${lit}L/dia)`}),
+    corte:(pv,gpd)=>({pv,cmsKg:pv*0.038,pb:17,ndt:65,ca:pv*0.038*0.52,p:pv*0.038*0.28,fdn_min:25,fdn_max:55,ureia_max:0.4,label:'Caprino — crescimento/corte'}),
+    manutencao:(pv)=>({pv,cmsKg:pv*0.025,pb:10,ndt:55,ca:pv*0.025*0.38,p:pv*0.025*0.20,fdn_min:35,fdn_max:70,ureia_max:0.3,label:'Caprino — manutenção'}),
+  },
+  suinos:{
+    leitao:(pv)=>({pv,cmsKg:Math.max(0.4,pv*0.060),pb:21,ndt:80,ca:pv*0.060*0.85,p:pv*0.060*0.60,fdn_min:3,fdn_max:10,ureia_max:0,label:'Leitão — fase inicial'}),
+    crescimento:(pv)=>({pv,cmsKg:pv*0.050,pb:18,ndt:78,ca:pv*0.050*0.75,p:pv*0.050*0.55,fdn_min:3,fdn_max:12,ureia_max:0,label:'Suíno — crescimento'}),
+    terminacao:(pv)=>({pv,cmsKg:pv*0.038,pb:15,ndt:76,ca:pv*0.038*0.65,p:pv*0.038*0.50,fdn_min:3,fdn_max:10,ureia_max:0,label:'Suíno — terminação'}),
+    gestacao:(pv)=>({pv,cmsKg:Math.min(3.5,pv*0.022),pb:13,ndt:65,ca:pv*0.022*0.75,p:pv*0.022*0.50,fdn_min:5,fdn_max:15,ureia_max:0,label:'Porca — gestação'}),
+  },
+  aves:{
+    inicial:(pv)=>({pv,cmsKg:Math.max(0.04,pv*0.12/1000),pb:22,ndt:82,ca:pv*0.12/1000*0.90,p:pv*0.12/1000*0.45,fdn_min:2,fdn_max:6,ureia_max:0,label:'Frango — fase inicial'}),
+    crescimento:(pv)=>({pv,cmsKg:pv*0.10/1000,pb:20,ndt:80,ca:pv*0.10/1000*0.85,p:pv*0.10/1000*0.40,fdn_min:2,fdn_max:6,ureia_max:0,label:'Frango — crescimento'}),
+    abate:(pv)=>({pv,cmsKg:pv*0.09/1000,pb:18,ndt:78,ca:pv*0.09/1000*0.80,p:pv*0.09/1000*0.38,fdn_min:2,fdn_max:6,ureia_max:0,label:'Frango — final/abate'}),
+    postura:(pv)=>({pv,cmsKg:Math.max(0.10,pv*0.045/1000),pb:17,ndt:75,ca:pv*0.045/1000*3.8,p:pv*0.045/1000*0.38,fdn_min:3,fdn_max:8,ureia_max:0,label:'Galinha poedeira'}),
+  },
+};
+
+let state={animal:null,apt:null,peso:0,meta:0,exig:null,formula:null,costsShown:false};
+let ingredientes=JSON.parse(JSON.stringify(ING_BASE));
+let saved=[];
+try{saved=JSON.parse(localStorage.getItem('formulapec')||'[]')}catch(e){}
+
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function buildAnimalGrid(){
+  const g=document.getElementById('animalGrid');g.innerHTML='';
+  ANIMAIS.forEach(a=>{
+    const b=document.createElement('button');
+    b.className='animal-btn'+(state.animal&&state.animal.id===a.id?' selected':'');
+    b.innerHTML=`<div class="icon">${a.icon}</div><div class="name">${a.name}</div>`;
+    b.onclick=()=>selectAnimal(a);g.appendChild(b);
+  });
+}
+
+function selectAnimal(a){
+  state.animal=a;state.apt=null;
+  document.getElementById('btnStep1').disabled=true;
+  document.querySelectorAll('.animal-btn').forEach((b,i)=>b.classList.toggle('selected',ANIMAIS[i].id===a.id));
+  const aptSec=document.getElementById('aptSection');aptSec.style.display='block';
+  const g=document.getElementById('aptGrid');g.innerHTML='';
+  a.apts.forEach(ap=>{
+    const b=document.createElement('button');b.className='apt-btn';
+    b.innerHTML=`<div class="apt-name">${ap.name}</div><div class="apt-desc">${ap.desc}</div>`;
+    b.onclick=()=>selectApt(ap,b);g.appendChild(b);
+  });
+}
+
+function selectApt(ap,btn){
+  state.apt=ap;
+  document.querySelectorAll('.apt-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('btnStep1').disabled=false;
+}
+
+function goStep2(){
+  goScreen('screen-step2');
+  document.getElementById('s2sub').textContent=state.animal.icon+' '+state.animal.name+' — '+state.apt.name;
+  const apt=state.apt.id;
+  const metaLabel=document.getElementById('metaLabel');
+  const metaHint=document.getElementById('metaHint');
+  const pesoHint=document.getElementById('pesoHint');
+  const ganhoField=document.getElementById('ganhoField');
+  ganhoField.style.display='block';
+  const isLeite=apt==='alta'||apt==='media'||apt==='baixa'||apt==='leite';
+  const isPostura=apt==='postura';
+  const isSemMeta=apt==='manutencao'||apt==='secas'||apt==='gestacao'||apt==='lactacao'||apt==='leitao'||apt==='cria';
+  if(isSemMeta&&!isLeite){ganhoField.style.display='none';}
+  else if(isLeite){metaLabel.textContent='Produção de leite esperada (L/dia)';metaHint.textContent='Ex: 20 para vinte litros por dia';}
+  else if(isPostura){metaLabel.textContent='Taxa de postura (ovos/ave/dia)';metaHint.textContent='Ex: 0.9 para 90% de postura';}
+  else{metaLabel.textContent='Ganho de peso esperado (kg/dia)';metaHint.textContent='Ex: 1.0 para 1kg por dia';}
+  if(state.animal.id==='aves'){pesoHint.textContent='Informe o peso médio das aves em gramas (ex: 2500g)';}
+  else{pesoHint.textContent='Peso vivo médio do animal em quilos';}
+  document.getElementById('pesoInput').value='';
+  document.getElementById('metaInput').value='';
+  document.getElementById('btnFormular').disabled=true;
+  buildCostFields();
+}
+
+function getIngs(){
+  const ids=ING_ANIMAIS[state.animal.id]||ING_BASE.map(i=>i.id);
+  return ingredientes.filter(i=>ids.includes(i.id));
+}
+
+function buildCostFields(){
+  const div=document.getElementById('costFields');div.innerHTML='';
+  getIngs().forEach(ing=>{
+    const row=document.createElement('div');row.className='ing-edit-row';
+    row.innerHTML=`<label>${ing.name}</label><input type="number" step="0.01" min="0" value="${ing.preco.toFixed(2)}" onchange="updatePreco('${ing.id}',this.value)"><span style="font-size:12px;color:#888;margin-left:2px">R$/kg</span>`;
+    div.appendChild(row);
+  });
+}
+
+function updatePreco(id,val){
+  const ing=ingredientes.find(i=>i.id===id);
+  if(ing&&parseFloat(val)>0) ing.preco=parseFloat(val);
+}
+
+function toggleCosts(){
+  state.costsShown=!state.costsShown;
+  document.getElementById('costFields').style.display=state.costsShown?'block':'none';
+  document.getElementById('btnToggleCosts').textContent=state.costsShown?'− Fechar preços':'+ Ajustar preços dos ingredientes';
+}
+
+function updateStep2(){
+  const p=parseFloat(document.getElementById('pesoInput').value)||0;
+  const m=parseFloat(document.getElementById('metaInput').value)||0;
+  state.peso=p;state.meta=m;
+  document.getElementById('btnFormular').disabled=p<=0;
+}
+
+function formular(){
+  const msgs=['Verificando exigências nutricionais...','Selecionando ingredientes...','Otimizando custo da dieta...','Balanceando proteína e energia...','Verificando minerais e fibra...','Finalizando formulação...'];
+  goScreen('screen-loading');
+  let idx=0;
+  const iv=setInterval(()=>{
+    document.getElementById('loadingMsg').textContent=msgs[Math.min(idx++,msgs.length-1)];
+  },400);
+  setTimeout(()=>{clearInterval(iv);calcFormula();goScreen('screen-result');showTab('tab-formula');},2500);
+}
+
+function calcExig(){
+  const ex=EXIGENCIAS[state.animal.id];
+  const apt=state.apt.id;
+  const fn=ex[apt];
+  return fn(state.peso,state.meta||0);
+}
+
+function calcFormula(){
+  const exig=calcExig();
+  state.exig=exig;
+  const ings=getIngs();
+  const isRumi=['bovCorte','bovLeite','ovinos','caprinos'].includes(state.animal.id);
+  const formula=otimizar(ings,exig,isRumi);
+  state.formula=formula;
+  renderResult();
+}
+
+function otimizar(ings,exig,isRumi){
+  const pbMeta=exig.pb;
+  const ndtMeta=exig.ndt;
+  const caMeta=exig.ca/exig.cmsKg;
+  const pMeta=exig.p/exig.cmsKg;
+  const fdnMin=exig.fdn_min;
+  const fdnMax=exig.fdn_max;
+  const ureiaMax=exig.ureia_max;
+  let best=null,bestCusto=9999;
+  for(let t=0;t<600;t++){
+    let props={};let rem=100;
+    const shuffled=[...ings].sort(()=>Math.random()-.5);
+    for(let k=0;k<shuffled.length-1;k++){
+      const frac=Math.random()*rem*(k<2?0.55:0.40);
+      props[shuffled[k].id]=frac;rem-=frac;
+    }
+    props[shuffled[shuffled.length-1].id]=Math.max(0,rem);
+    if(!isRumi){props['ureia']=0;props['silagem']=0;props['capimelefante']=0;}
+    if(ureiaMax===0) props['ureia']=0;
+    const tot=Object.values(props).reduce((a,b)=>a+b,0);
+    if(tot<=0) continue;
+    Object.keys(props).forEach(k=>props[k]=props[k]/tot*100);
+    const nut=calcNut(props,ings);
+    const ureiaKg=(props['ureia']||0);
+    if(nut.pb>=pbMeta*0.93&&nut.ndt>=ndtMeta*0.92&&nut.ca>=caMeta*0.88&&nut.p>=pMeta*0.88&&nut.fdn>=fdnMin&&nut.fdn<=fdnMax&&ureiaKg<=ureiaMax){
+      const custo=calcCusto(props,ings);
+      if(custo<bestCusto){bestCusto=custo;best={...props};}
+    }
+  }
+  if(!best){
+    best={};
+    if(isRumi){best['silagem']=42;best['milho']=28;best['farSoja']=20;best['nucleo']=2;best['ureia']=1;}
+    else if(['suinos'].includes(state.animal.id)){best['milho']=68;best['farSoja']=28;best['nucleo']=4;}
+    else{best['milho']=65;best['farSoja']=31;best['nucleo']=4;}
+    const tot=Object.values(best).reduce((a,b)=>a+b,0);
+    Object.keys(best).forEach(k=>best[k]=best[k]/tot*100);
+  }
+  const nutFinal=calcNut(best,ings);
+  const custoFinal=calcCusto(best,ings);
+  return{props:best,nut:nutFinal,custo:custoFinal,cms:exig.cmsKg};
+}
+
+function calcNut(props,ings){
+  let pb=0,ndt=0,ca=0,p=0,fdn=0;
+  ings.forEach(ing=>{const pct=(props[ing.id]||0)/100;pb+=ing.pb*pct;ndt+=ing.ndt*pct;ca+=ing.ca*pct;p+=ing.p*pct;fdn+=ing.fdn*pct;});
+  return{pb,ndt,ca,p,fdn};
+}
+
+function calcCusto(props,ings){
+  let c=0;ings.forEach(ing=>{c+=ing.preco*(props[ing.id]||0)/100;});return c;
+}
+
+function renderResult(){
+  const f=state.formula,ex=state.exig;
+  const ings=getIngs();
+  document.getElementById('resultHeader').innerHTML=`<h2>${state.animal.icon} ${ex.label}</h2><p>Animal: ${ex.pv}kg &nbsp;·&nbsp; Consumo estimado: ${f.cms.toFixed(1)}kg/dia</p>`;
+  const custoKg=f.custo.toFixed(2);
+  const custo_dia=(f.custo*f.cms).toFixed(2);
+  document.getElementById('metricsBox').innerHTML=`
+    <div class="metric"><div class="m-label">Custo por kg</div><div class="m-val">R$ ${custoKg}</div></div>
+    <div class="metric"><div class="m-label">Custo por dia</div><div class="m-val">R$ ${custo_dia}</div></div>
+    <div class="metric"><div class="m-label">Consumo diário</div><div class="m-val">${f.cms.toFixed(1)}<span class="m-unit"> kg/dia</span></div></div>
+    <div class="metric"><div class="m-label">Proteína bruta</div><div class="m-val">${f.nut.pb.toFixed(1)}<span class="m-unit"> %</span></div></div>
+  `;
+  const tab=document.getElementById('ingTable');
+  tab.innerHTML='<thead><tr><th>Ingrediente</th><th>%</th><th>kg/dia</th><th>R$/kg</th></tr></thead><tbody id="ingTbody"></tbody>';
+  const tbody=document.getElementById('ingTbody');
+  const entries=Object.entries(f.props).filter(([id,pct])=>pct>=0.5).sort((a,b)=>b[1]-a[1]);
+  entries.forEach(([id,pct])=>{
+    const ing=ings.find(i=>i.id===id);if(!ing) return;
+    const kgdia=(pct/100*f.cms).toFixed(2);
+    const pctW=Math.round(Math.min(100,pct));
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${ing.name}</td><td><span class="ing-pct-bar"><span class="ing-pct-fill" style="width:${pctW}%"></span></span><b>${pct.toFixed(1)}%</b></td><td>${kgdia} kg</td><td>R$ ${ing.preco.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const bars=document.getElementById('nutriBars');
+  const itens=[
+    {name:'Proteína bruta',val:f.nut.pb,meta:ex.pb,unit:'%'},
+    {name:'NDT',val:f.nut.ndt,meta:ex.ndt,unit:'%'},
+    {name:'Cálcio',val:f.nut.ca,meta:ex.ca/ex.cmsKg,unit:'%'},
+    {name:'Fósforo',val:f.nut.p,meta:ex.p/ex.cmsKg,unit:'%'},
+    {name:'FDN',val:f.nut.fdn,meta:(ex.fdn_min+ex.fdn_max)/2,unit:'%'},
+  ];
+  bars.innerHTML='';
+  itens.forEach(it=>{
+    const pct=Math.min(120,Math.round(it.val/it.meta*100));
+    const color=pct>=90?'#1D9E75':pct>=70?'#EF9F27':'#E24B4A';
+    const bclass=pct>=90?'green':pct>=70?'amber':'red';
+    const blabel=pct>=90?'OK':pct>=70?'Atenção':'Baixo';
+    bars.innerHTML+=`<div class="nut-row">
+      <span class="nut-label">${it.name}</span>
+      <div class="nut-bar-wrap"><div class="nut-bar" style="width:${Math.min(100,pct)}%;background:${color}"></div></div>
+      <span class="nut-val">${it.val.toFixed(1)}${it.unit}&nbsp;<span class="badge ${bclass}">${blabel}</span></span>
+    </div>`;
+  });
+
+  let al='';
+  const ureiaP=f.props['ureia']||0;
+  const fdn=f.nut.fdn;
+  const isRumi=['bovCorte','bovLeite','ovinos','caprinos'].includes(state.animal.id);
+  if(isRumi&&ureiaP>ex.ureia_max*0.85&&ex.ureia_max>0) al+=`<div class="alert warn">⚠️ <b>Ureia próxima do limite máximo</b> (${ureiaP.toFixed(1)}%). Adapte o animal gradualmente por 14 dias e garanta água à vontade.</div>`;
+  if(isRumi&&ureiaP>0&&ureiaP<=ex.ureia_max) al+=`<div class="alert info">ℹ️ <b>Ração com ureia:</b> ofereça sempre água fresca. Adaptação progressiva de 14 dias é obrigatória.</div>`;
+  if(fdn<ex.fdn_min) al+=`<div class="alert warn">⚠️ <b>Fibra (FDN) abaixo do mínimo.</b> Risco de acidose e timpanismo em ruminantes. Inclua mais volumoso (silagem, capim).</div>`;
+  if(fdn>ex.fdn_max) al+=`<div class="alert warn">⚠️ <b>Fibra (FDN) acima do ideal.</b> Pode reduzir consumo de matéria seca e desempenho. Reduza o volumoso.</div>`;
+  if(f.nut.pb<ex.pb*0.92) al+=`<div class="alert warn">⚠️ <b>Proteína bruta abaixo do recomendado.</b> Considere aumentar o farelo de soja.</div>`;
+  if(f.nut.ndt<ex.ndt*0.92) al+=`<div class="alert warn">⚠️ <b>Energia (NDT) abaixo do recomendado.</b> Considere aumentar o milho ou polpa cítrica.</div>`;
+  if(!al) al='<div class="alert ok">✅ <b>Nenhum alerta nutricional.</b> A formulação está dentro dos parâmetros técnicos recomendados para esta categoria animal.</div>';
+  document.getElementById('alertasBox').innerHTML=al;
+
+  const anNome=state.animal.name.toLowerCase();
+  const aptNome=state.apt.name.toLowerCase();
+  let exp=`<p><b>Resumo da formulação</b></p><br>`;
+  exp+=`<p>Esta dieta foi formulada para um <b>${anNome} de ${ex.pv}kg</b> com objetivo de <b>${aptNome}</b>, com base nas tabelas nutricionais BR-CORTE e NRC adaptadas às condições brasileiras.</p><br>`;
+  exp+=`<p><b>Como funciona o cálculo?</b><br>O sistema calcula as exigências diárias do animal em proteína (PB), energia (NDT), cálcio, fósforo e fibra. Depois escolhe os ingredientes disponíveis e monta a fórmula que atende 100% das exigências com o menor custo possível.</p><br>`;
+  exp+=`<p><b>Consumo diário:</b> ${f.cms.toFixed(1)} kg de ração por animal.</p>`;
+  exp+=`<p><b>Custo estimado:</b> R$ ${(f.custo*f.cms).toFixed(2)} por animal por dia (R$ ${f.custo.toFixed(2)}/kg).</p><br>`;
+  exp+=`<p><b>Dicas práticas para o campo:</b></p>`;
+  exp+=`<ul style="margin-left:1.2rem;margin-top:6px">
+    <li>Pese os ingredientes com precisão — pequenas variações mudam o custo.</li>
+    <li>Misture os ingredientes secos primeiro, depois os líquidos (melaço, se houver).</li>
+    <li>Adicione o núcleo mineral por último para garantir boa distribuição.</li>
+    <li>Faça adaptação gradual ao mudar a dieta (7 a 14 dias).</li>
+    <li>Ajuste a formulação a cada 30 dias conforme peso e desempenho.</li>
+  </ul>`;
+  document.getElementById('expBox').innerHTML=exp;
+}
+
+function showTab(id){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const tabs=['tab-formula','tab-nutri','tab-alertas','tab-exp'];
+  const idx=tabs.indexOf(id);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+}
+
+function salvarFormulacao(){
+  if(!state.formula) return;
+  const nome=`${state.animal.name} — ${state.apt.name} (${state.peso}kg)`;
+  const data={nome,animal:state.animal.id,apt:state.apt.id,peso:state.peso,meta:state.meta,formula:state.formula,exig:state.exig,data:new Date().toLocaleDateString('pt-BR')};
+  saved.unshift(data);
+  try{localStorage.setItem('formulapec',JSON.stringify(saved.slice(0,20)));}catch(e){}
+  const btn=document.getElementById('btnSalvar');
+  btn.textContent='✅ Formulação salva!';
+  setTimeout(()=>btn.textContent='💾 Salvar formulação',2500);
+}
+
+function goSaved(){
+  const div=document.getElementById('savedList');
+  if(!saved.length){div.innerHTML='<p style="color:#888;font-size:14px;text-align:center;padding:1rem">Nenhuma formulação salva ainda.<br>Gere e salve sua primeira dieta!</p>';}
+  else{
+    div.innerHTML=saved.map((s,i)=>`
+      <div class="saved-item">
+        <div><div class="s-name">${s.nome}</div><div class="s-sub">${s.data} · R$ ${(s.formula.custo*s.formula.cms).toFixed(2)}/dia</div></div>
+        <button class="s-btn" onclick="carregarSaved(${i})">Ver →</button>
+      </div>`).join('');
+  }
+  goScreen('screen-saved');
+}
+
+function carregarSaved(i){
+  const s=saved[i];
+  state.animal=ANIMAIS.find(a=>a.id===s.animal);
+  if(!state.animal) return;
+  state.apt=state.animal.apts.find(a=>a.id===s.apt);
+  state.peso=s.peso;state.meta=s.meta;state.formula=s.formula;state.exig=s.exig;
+  renderResult();goScreen('screen-result');showTab('tab-formula');
+}
+
+buildAnimalGrid();
+</script>
+</body>
+</html>
